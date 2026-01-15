@@ -1,21 +1,26 @@
 <template>
   <div class="login-container">
+    <div class="back-link-wrapper">
+      <router-link to="/" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Home
+      </router-link>
+    </div>
     <div class="background-overlay"></div>
     <div class="login-card">
       <div class="logo">
         <span class="logo-text">CINE<span>PASS</span></span>
       </div>
-      <h2>Welcome Back</h2>
-      <p>Log in to book your next cinematic experience</p>
+      <h2>Internal User Login</h2>
+      <p>Sign in to access your dashboard</p>
       
       <form @submit.prevent="handleLogin">
         <div class="input-group">
-          <label>Email or Username</label>
-          <input type="text" v-model="email" placeholder="Enter your email" required />
+          <label>Email</label>
+          <input type="email" v-model="email" placeholder="john@example.com" required />
         </div>
         <div class="input-group">
           <label>Password</label>
-          <input type="password" v-model="password" placeholder="••••••••" required />
+          <input type="password" v-model="password" placeholder="Any password works" required />
         </div>
         <div class="options">
           <label class="remember">
@@ -23,30 +28,42 @@
           </label>
           <a href="#">Forgot password?</a>
         </div>
-        <button type="submit" class="login-btn">Sign In</button>
+        <button type="submit" class="login-btn">
+          <span v-if="loading">Logging in...</span>
+          <span v-else>Sign In</span>
+        </button>
       </form>
       
       <div class="footer">
-        New to CinePass? <a href="#">Create an account</a>
+        Don't have an account? <a href="#">Sign up now</a>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { currentUser } from '../model/mockData.js'
+
 export default {
-  name: 'LoginView',
+  name: 'UserLogin',
   data() {
     return {
       email: '',
-      password: ''
+      password: '',
+      loading: false
     }
   },
   methods: {
     handleLogin() {
-      // Simulate login and redirect to main page
-      console.log('Logging in...', this.email);
-      this.$router.push('/admin/dashboard');
+      this.loading = true;
+      // Simulate API delay
+      setTimeout(() => {
+        currentUser.name = "John Doe"; // Reset name just in case
+        currentUser.email = this.email;
+        currentUser.isLoggedIn = true;
+        this.loading = false;
+        this.$router.push('/');
+      }, 1000);
     }
   }
 }
@@ -59,8 +76,33 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop') no-repeat center center/cover;
+  background: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2025&auto=format&fit=crop') no-repeat center center/cover;
   position: relative;
+}
+
+.back-link-wrapper {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 20;
+}
+
+.back-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0,0,0,0.5);
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s;
+}
+
+.back-link:hover {
+  background: var(--primary);
 }
 
 .background-overlay {

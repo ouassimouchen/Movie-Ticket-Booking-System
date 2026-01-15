@@ -1,23 +1,66 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import MainView from '../views/MainView.vue'
+import HomeView from '../views/HomeView.vue'
+import MovieDetailView from '../views/MovieDetailView.vue'
+import BookingView from '../views/BookingView.vue'
+import CheckoutView from '../views/CheckoutView.vue'
+import UserDashboard from '../views/UserDashboard.vue'
+import UserLogin from '../views/UserLogin.vue'
 
 const routes = [
     {
         path: '/',
-        name: 'login',
+        name: 'home',
+        component: HomeView
+    },
+    {
+        path: '/login',
+        name: 'user-login',
+        component: UserLogin
+    },
+    {
+        path: '/movie/:id',
+        name: 'movie-detail',
+        component: MovieDetailView
+    },
+    {
+        path: '/booking/:sessionId',
+        name: 'booking',
+        component: BookingView
+    },
+    {
+        path: '/checkout',
+        name: 'checkout',
+        component: CheckoutView
+    },
+    {
+        path: '/my-dashboard',
+        name: 'user-dashboard',
+        component: UserDashboard
+    },
+    {
+        path: '/admin/login',
+        name: 'admin-login',
         component: LoginView
     },
     {
-        path: '/main',
-        name: 'main',
+        path: '/admin/dashboard',
+        name: 'admin-dashboard',
         component: MainView
     }
 ]
 
 const router = createRouter({
     history: createWebHistory(),
-    routes
+    routes,
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition
+        } else {
+            return { top: 0 }
+        }
+    }
 })
 
 export default router
