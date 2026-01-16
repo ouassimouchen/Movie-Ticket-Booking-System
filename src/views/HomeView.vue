@@ -59,17 +59,27 @@
 
 <script>
 import { movies } from '../model/mockData.js'
+import { store } from '../store'
 
 export default {
   name: 'HomeView',
   data() {
     return {
-      movies: movies
+      allMovies: movies,
+      store
     }
   },
   computed: {
+    movies() {
+      if (!this.store.searchQuery) return this.allMovies;
+      const query = this.store.searchQuery.toLowerCase();
+      return this.allMovies.filter(m => 
+        m.title.toLowerCase().includes(query) || 
+        m.genre.some(g => g.toLowerCase().includes(query))
+      );
+    },
     featuredMovie() {
-      return this.movies[0]; // Just picking the first one for now
+      return this.movies[0] || this.allMovies[0];
     }
   }
 }

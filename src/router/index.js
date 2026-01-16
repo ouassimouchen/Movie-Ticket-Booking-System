@@ -7,6 +7,9 @@ import BookingView from '../views/BookingView.vue'
 import CheckoutView from '../views/CheckoutView.vue'
 import UserDashboard from '../views/UserDashboard.vue'
 import UserLogin from '../views/UserLogin.vue'
+import UserSignup from '../views/UserSignup.vue'
+import OffersView from '../views/OffersView.vue'
+import ExperiencesView from '../views/ExperiencesView.vue'
 
 const routes = [
     {
@@ -18,6 +21,11 @@ const routes = [
         path: '/login',
         name: 'user-login',
         component: UserLogin
+    },
+    {
+        path: '/signup',
+        name: 'user-signup',
+        component: UserSignup
     },
     {
         path: '/movie/:id',
@@ -48,6 +56,16 @@ const routes = [
         path: '/admin/dashboard',
         name: 'admin-dashboard',
         component: MainView
+    },
+    {
+        path: '/offers',
+        name: 'offers',
+        component: OffersView
+    },
+    {
+        path: '/experiences',
+        name: 'experiences',
+        component: ExperiencesView
     }
 ]
 

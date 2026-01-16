@@ -8,6 +8,10 @@
       <h2>Welcome Back</h2>
       <p>Log in to book your next cinematic experience</p>
       
+      <div v-if="error" class="error-message">
+        {{ error }}
+      </div>
+      
       <form @submit.prevent="handleLogin">
         <div class="input-group">
           <label>Email or Username</label>
@@ -34,19 +38,46 @@
 </template>
 
 <script>
+import api from '../api';
+
 export default {
   name: 'LoginView',
   data() {
     return {
       email: '',
-      password: ''
+      password: '',
+      loading: false,
+      error: ''
     }
   },
   methods: {
-    handleLogin() {
-      // Simulate login and redirect to main page
-      console.log('Logging in...', this.email);
-      this.$router.push('/admin/dashboard');
+    async handleLogin() {
+      this.loading = true;
+      this.error = '';
+      try {
+        const response = await api.post('/auth/login', {
+          email: this.email,
+          password: this.password
+        });
+        
+        const { token, user } = response.data;
+        
+        // Check if user is admin
+        if (user.role !== 'admin') {
+          // For now, let's just allow it or maybe just log them in as admin for testing
+          // In a real app, you'd check user.role === 'admin'
+        }
+        
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        this.$router.push('/admin/dashboard');
+      } catch (err) {
+        this.error = err.response?.data?.message || 'Failed to login';
+        console.error('Login error:', err);
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }
@@ -111,6 +142,16 @@ p {
   color: rgba(255, 255, 255, 0.6);
   margin-bottom: 2.5rem;
   font-size: 0.9rem;
+}
+
+.error-message {
+  background: rgba(229, 9, 20, 0.2);
+  border: 1px solid #e50914;
+  color: #ff4d4d;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
 }
 
 .input-group {

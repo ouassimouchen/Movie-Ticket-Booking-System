@@ -14,13 +14,34 @@
 
     <div class="user-actions">
       <div class="search-bar">
-        <input type="text" placeholder="Search movies..." />
+        <input type="text" v-model="store.searchQuery" placeholder="Search movies..." />
         <i class="fas fa-search"></i>
+        
+        <!-- Search Results Dropdown -->
+        <div v-if="filteredResults.length > 0" class="results-dropdown">
+          <div 
+            v-for="movie in filteredResults" 
+            :key="movie.id" 
+            class="result-item"
+            @click="selectMovie(movie.id)"
+          >
+            <img :src="movie.poster" :alt="movie.title" class="result-poster" />
+            <div class="result-info">
+              <span class="result-title">{{ movie.title }}</span>
+              <span class="result-genre">{{ movie.genre.join(', ') }}</span>
+            </div>
+          </div>
+        </div>
       </div>
       
-      <router-link v-if="user.isLoggedIn" to="/my-dashboard" class="user-profile">
-        <img :src="'https://ui-avatars.com/api/?name=' + user.name + '&background=e50914&color=fff'" alt="User" />
-      </router-link>
+      <div v-if="user.isLoggedIn" class="user-profile-group">
+        <router-link to="/my-dashboard" class="user-profile">
+          <img :src="'https://ui-avatars.com/api/?name=' + user.name + '&background=e50914&color=fff'" alt="User" />
+        </router-link>
+        <button @click="handleLogout" class="logout-btn" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
       
       <router-link v-else to="/login" class="login-btn">
         Sign In
@@ -30,14 +51,32 @@
 </template>
 
 <script>
-import { currentUser } from '../model/mockData.js'
+
+import { store } from '../store';
+import { movies } from '../model/mockData';
 
 export default {
   name: 'Navbar',
   data() {
     return {
       isScrolled: false,
-      user: currentUser
+      store
+    }
+  },
+  computed: {
+    user() {
+      return {
+        isLoggedIn: !!localStorage.getItem('token'),
+        name: JSON.parse(localStorage.getItem('user') || '{}').name || ''
+      }
+    },
+    filteredResults() {
+      if (!this.store.searchQuery || this.store.searchQuery.length < 2) return [];
+      const query = this.store.searchQuery.toLowerCase();
+      return movies.filter(m => 
+        m.title.toLowerCase().includes(query) || 
+        m.genre.some(g => g.toLowerCase().includes(query))
+      ).slice(0, 5); // Limit to 5 results
     }
   },
   mounted() {
@@ -49,6 +88,15 @@ export default {
   methods: {
     handleScroll() {
       this.isScrolled = window.scrollY > 50;
+    },
+    handleLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.reload();
+    },
+    selectMovie(movieId) {
+      this.store.searchQuery = '';
+      this.$router.push('/movie/' + movieId);
     }
   }
 }
@@ -148,6 +196,65 @@ export default {
   width: 250px;
 }
 
+.results-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  z-index: 1001;
+}
+
+.result-item {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.result-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.result-poster {
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.result-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.result-title {
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.result-genre {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .user-profile img {
   width: 40px;
   height: 40px;
@@ -158,6 +265,26 @@ export default {
 
 .user-profile:hover img {
   border-color: var(--primary);
+}
+
+.user-profile-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+  padding: 0.5rem;
+}
+
+.logout-btn:hover {
+  color: var(--primary);
 }
 
 @media (max-width: 768px) {

@@ -10,36 +10,37 @@
       <div class="logo">
         <span class="logo-text">CINE<span>PASS</span></span>
       </div>
-      <h2>Internal User Login</h2>
-      <p>Sign in to access your dashboard</p>
+      <h2>Create Account</h2>
+      <p>Join CinePass to book tickets online</p>
       
       <div v-if="error" class="error-message">
         {{ error }}
       </div>
+      <div v-if="success" class="success-message">
+        {{ success }}
+      </div>
       
-      <form @submit.prevent="handleLogin">
+      <form v-if="!success" @submit.prevent="handleSignup">
+        <div class="input-group">
+          <label>Full Name</label>
+          <input type="text" v-model="name" placeholder="John Doe" required />
+        </div>
         <div class="input-group">
           <label>Email</label>
           <input type="email" v-model="email" placeholder="john@example.com" required />
         </div>
         <div class="input-group">
           <label>Password</label>
-          <input type="password" v-model="password" placeholder="Any password works" required />
-        </div>
-        <div class="options">
-          <label class="remember">
-            <input type="checkbox" /> Remember me
-          </label>
-          <a href="#">Forgot password?</a>
+          <input type="password" v-model="password" placeholder="••••••••" required />
         </div>
         <button type="submit" class="login-btn">
-          <span v-if="loading">Logging in...</span>
-          <span v-else>Sign In</span>
+          <span v-if="loading">Creating account...</span>
+          <span v-else>Sign Up</span>
         </button>
       </form>
       
       <div class="footer">
-        Don't have an account? <router-link to="/signup">Sign up now</router-link>
+        Already have an account? <router-link to="/login">Sign in</router-link>
       </div>
     </div>
   </div>
@@ -49,33 +50,36 @@
 import api from '../api';
 
 export default {
-  name: 'UserLogin',
+  name: 'UserSignup',
   data() {
     return {
+      name: '',
       email: '',
       password: '',
       loading: false,
-      error: ''
+      error: '',
+      success: ''
     }
   },
   methods: {
-    async handleLogin() {
+    async handleSignup() {
       this.loading = true;
       this.error = '';
+      this.success = '';
       try {
-        const response = await api.post('/auth/login', {
+        await api.post('/auth/register', {
+          name: this.name,
           email: this.email,
           password: this.password
         });
         
-        const { token, user } = response.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        this.$router.push('/');
+        this.success = 'Account created successfully! Redirecting to login...';
+        setTimeout(() => {
+          this.$router.push('/login');
+        }, 2000);
       } catch (err) {
-        this.error = err.response?.data?.message || 'Failed to login';
-        console.error('Login error:', err);
+        this.error = err.response?.data?.message || 'Failed to register';
+        console.error('Registration error:', err);
       } finally {
         this.loading = false;
       }
@@ -91,7 +95,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2025&auto=format&fit=crop') no-repeat center center/cover;
+  background: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop') no-repeat center center/cover;
   position: relative;
 }
 
@@ -180,6 +184,16 @@ p {
   font-size: 0.85rem;
 }
 
+.success-message {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid #22c55e;
+  color: #4ade80;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
 .input-group {
   text-align: left;
   margin-bottom: 1.5rem;
@@ -207,28 +221,6 @@ p {
   background: rgba(255, 255, 255, 0.1);
   border-color: #e50914;
   box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.2);
-}
-
-.options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  font-size: 0.85rem;
-}
-
-.remember {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-}
-
-.options a {
-  color: #e50914;
-  text-decoration: none;
-  font-weight: 600;
 }
 
 .login-btn {

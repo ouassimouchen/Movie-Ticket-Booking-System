@@ -204,7 +204,14 @@ export default {
       }
     },
     proceedToCheckout() {
-      currentBooking.details = {
+      // Check if user is logged in
+      if (!localStorage.getItem('token')) {
+        alert("Please log in to book tickets.");
+        this.$router.push('/login');
+        return;
+      }
+
+      const bookingDetails = {
         movie: this.movie,
         session: this.session,
         seats: this.selectedSeats,
@@ -212,6 +219,9 @@ export default {
         bookingFee: this.bookingFee,
         total: this.totalPrice + this.bookingFee
       };
+      
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
+      currentBooking.details = bookingDetails;
       this.$router.push('/checkout');
     }
   }

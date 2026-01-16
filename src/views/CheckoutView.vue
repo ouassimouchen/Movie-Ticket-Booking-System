@@ -101,15 +101,27 @@
 </template>
 
 <script>
-import { currentBooking, currentUser } from '../model/mockData.js'
+import { currentBooking } from '../model/mockData.js'
+import api from '../api';
 
 export default {
   name: 'CheckoutView',
   data() {
     return {
-      booking: currentBooking.details,
+      booking: currentBooking.details || JSON.parse(localStorage.getItem('pendingBooking')),
       timer: 300, // 5 minutes
       processing: false
+    }
+  },
+  async created() {
+    // If we have it in localStorage but not in mockData, sync it back
+    if (!currentBooking.details && this.booking) {
+      currentBooking.details = this.booking;
+    }
+    
+    // Redirect if no booking found
+    if (!this.booking) {
+      this.$router.push('/');
     }
   },
   mounted() {
@@ -128,34 +140,45 @@ export default {
       const s = seconds % 60;
       return `${m}:${s < 10 ? '0' : ''}${s}`;
     },
-    processPayment() {
+    async processPayment() {
       this.processing = true;
-      
-      // Simulate API call
-      setTimeout(() => {
-        this.completeBooking();
-      }, 2000);
+      try {
+        // Simulate payment delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await this.completeBooking();
+      } catch (err) {
+        alert('Payment failed: ' + (err.response?.data?.message || err.message));
+        this.processing = false;
+      }
     },
-    completeBooking() {
+    async completeBooking() {
       // Create detailed booking record
-      const newBooking = {
-        id: 'B-' + Math.floor(Math.random() * 100000),
-        bookingDate: new Date().toISOString(),
-        movie: this.booking.movie,
-        session: this.booking.session,
+      const bookingId = 'B-' + Math.floor(Math.random() * 100000);
+      
+      const bookingData = {
+        id: bookingId,
+        movie_id: this.booking.movie.id,
+        movie_title: this.booking.movie.title,
+        movie_poster: this.booking.movie.poster,
+        session_hall: this.booking.session.hall,
+        session_time: this.booking.session.time,
         seats: this.booking.seats,
-        total: this.booking.total,
-        status: 'Confirmed'
+        total: this.booking.total
       };
 
-      // Add to user history
-      currentUser.bookings.unshift(newBooking);
+      try {
+        await api.post('/bookings', bookingData);
+        
+        // Clear temp booking
+        currentBooking.details = null;
+        localStorage.removeItem('pendingBooking');
 
-      // Clear temp booking
-      currentBooking.details = null;
-
-      // Navigate to Dashboard
-      this.$router.push('/my-dashboard');
+        // Navigate to Dashboard
+        this.$router.push('/my-dashboard');
+      } catch (err) {
+        console.error('Error saving booking:', err);
+        throw err;
+      }
     }
   }
 }

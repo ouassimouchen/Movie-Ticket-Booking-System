@@ -5,7 +5,7 @@
         <span class="logo-text">CINE<span>PASS</span></span>
       </div>
       <div class="user-info">
-        <span>Admin User</span>
+        <span>Admin View</span>
         <button @click="logout" class="logout-btn">Logout</button>
       </div>
     </nav>
@@ -16,7 +16,12 @@
         <p>Monitor and manage movie ticket bookings and user data</p>
       </header>
 
-      <div class="data-card">
+      <div v-if="loading" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Fetching users from database...</span>
+      </div>
+
+      <div v-else class="data-card">
         <div class="card-header">
           <h3>User List</h3>
           <span class="badge">{{ users.length }} Total</span>
@@ -28,11 +33,9 @@
                 <th>ID</th>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Region ID</th>
-                <th>Status</th>
                 <th>Role</th>
-                <th>Created Time</th>
-                <th>Updated Time</th>
+                <th>Created At</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -40,46 +43,178 @@
                 <td>{{ user.id }}</td>
                 <td class="user-name">{{ user.name }}</td>
                 <td class="user-email">{{ user.email }}</td>
-                <td>{{ user.regionId }}</td>
                 <td>
-                  <span :class="['status-pill', user.status.toLowerCase()]">{{ user.status }}</span>
+                  <span :class="['role-pill', user.role]">{{ user.role }}</span>
                 </td>
-                <td>{{ user.role }}</td>
-                <td>{{ user.createdTime }}</td>
-                <td class="date">{{ user.updatedTime }}</td>
+                <td class="date">{{ formatDate(user.created_at) }}</td>
+                <td class="actions">
+                  <button class="edit-btn" @click="openEditModal(user)" title="Edit User">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="delete-btn" @click="confirmDelete(user)" title="Delete User">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
     </main>
+
+    <!-- Edit Modal -->
+    <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Edit User</h3>
+          <button class="close-btn" @click="showModal = false">&times;</button>
+        </div>
+        <form @submit.prevent="updateUser">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" v-model="editForm.name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" v-model="editForm.email" required />
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select v-model="editForm.role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="cancel-btn" @click="showModal = false">Cancel</button>
+            <button type="submit" class="save-btn" :disabled="saving">
+              <span v-if="saving">Saving...</span>
+              <span v-else>Save Changes</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
+      <div class="modal delete-modal">
+        <div class="modal-header">
+          <h3>Confirm Deletion</h3>
+          <button class="close-btn" @click="showDeleteModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete user <strong>{{ userToDelete?.name }}</strong>?</p>
+          <p class="warning-text">This action cannot be undone and will also remove all associated bookings.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="cancel-btn" @click="showDeleteModal = false">Cancel</button>
+          <button type="button" class="delete-confirm-btn" @click="executeDelete" :disabled="deleting">
+            <span v-if="deleting">Deleting...</span>
+            <span v-else>Yes, Delete User</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import api from '../api';
+
 export default {
   name: 'MainView',
   data() {
     return {
-      users: [
-        { id: 1, name: 'Lukas Schneider', email: 'lukas.s@example.de', regionId: 'DE-784', status: 'Active', role: 'Admin', createdTime: '12:40:50', updatedTime: '2025-11-09' },
-        { id: 2, name: 'Emma Lefebvre', email: 'emma.l@example.fr', regionId: 'FR-796', status: 'Pending', role: 'Editor', createdTime: '09:22:22', updatedTime: '2020-05-05' },
-        { id: 3, name: 'Matteo Rossi', email: 'matteo.r@example.it', regionId: 'IT-35', status: 'Active', role: 'Viewer', createdTime: '17:06:24', updatedTime: '2014-02-01' },
-        { id: 4, name: 'Sofia Andersson', email: 'sofia.a@example.se', regionId: 'SE-489', status: 'Active', role: 'Admin', createdTime: '14:26:38', updatedTime: '2014-11-17' },
-        { id: 5, name: 'Oliver Smith', email: 'oliver.s@example.uk', regionId: 'UK-252', status: 'Inactive', role: 'Viewer', createdTime: '14:26:29', updatedTime: '2008-08-03' },
-        { id: 6, name: 'Amélie Dubois', email: 'amelie.d@example.fr', regionId: 'FR-597', status: 'Active', role: 'Editor', createdTime: '12:29:31', updatedTime: '2015-09-09' },
-        { id: 7, name: 'Hans Müller', email: 'hans.m@example.de', regionId: 'DE-12', status: 'Active', role: 'Viewer', createdTime: '10:15:00', updatedTime: '2023-12-01' },
-        { id: 8, name: 'Elena Garcia', email: 'elena.g@example.es', regionId: 'ES-45', status: 'Pending', role: 'Editor', createdTime: '11:30:15', updatedTime: '2024-01-15' }
-      ]
+      users: [],
+      loading: true,
+      showModal: false,
+      showDeleteModal: false,
+      userToDelete: null,
+      saving: false,
+      deleting: false,
+      editForm: {
+        id: null,
+        name: '',
+        email: '',
+        role: ''
+      }
     }
   },
-  mounted() {
-    // Print data to console as shown in the user's screenshot
-    console.log('MainView.vue:9');
-    console.log('(', this.users.length, ')', JSON.parse(JSON.stringify(this.users)));
+  async created() {
+    // Basic Admin Check
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData.role !== 'admin') {
+      alert('Access denied. Admin role required.');
+      this.$router.push('/');
+      return;
+    }
+    await this.fetchUsers();
   },
   methods: {
+    async fetchUsers() {
+      this.loading = true;
+      try {
+        const response = await api.get('/admin/users');
+        this.users = response.data;
+        console.log('Fetched users:', this.users);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        alert('Failed to fetch users: ' + (err.response?.data?.message || err.message));
+      } finally {
+        this.loading = false;
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      return new Date(dateStr).toLocaleDateString('en-US', options);
+    },
+    openEditModal(user) {
+      this.editForm = { ...user };
+      this.showModal = true;
+    },
+    async updateUser() {
+      this.saving = true;
+      try {
+        await api.put(`/admin/users/${this.editForm.id}`, {
+          name: this.editForm.name,
+          email: this.editForm.email,
+          role: this.editForm.role
+        });
+        alert('User updated successfully');
+        this.showModal = false;
+        await this.fetchUsers();
+      } catch (err) {
+        console.error('Error updating user:', err);
+        alert('Failed to update user: ' + (err.response?.data?.message || err.message));
+      } finally {
+        this.saving = false;
+      }
+    },
+    confirmDelete(user) {
+      this.userToDelete = user;
+      this.showDeleteModal = true;
+    },
+    async executeDelete() {
+      if (!this.userToDelete) return;
+      this.deleting = true;
+      try {
+        await api.delete(`/admin/users/${this.userToDelete.id}`);
+        alert('User deleted successfully');
+        this.showDeleteModal = false;
+        this.userToDelete = null;
+        await this.fetchUsers();
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        alert('Failed to delete user: ' + (err.response?.data?.message || err.message));
+      } finally {
+        this.deleting = false;
+      }
+    },
     logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       this.$router.push('/');
     }
   }
@@ -155,6 +290,20 @@ export default {
   color: rgba(255, 255, 255, 0.6);
 }
 
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.loading-state i {
+  font-size: 2rem;
+  color: #e50914;
+}
+
 .data-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -220,30 +369,187 @@ tr:hover {
   font-size: 0.85rem;
 }
 
-.status-pill {
+.role-pill {
   padding: 0.2rem 0.6rem;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.status-pill.active {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
+.role-pill.admin {
+  background: rgba(229, 9, 20, 0.2);
+  color: #e50914;
 }
 
-.status-pill.pending {
-  background: rgba(234, 179, 8, 0.1);
-  color: #eab308;
-}
-
-.status-pill.inactive {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+.role-pill.user {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .date {
   font-family: monospace;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-btn:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #181818;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 450px;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.modal-header h3 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cancel-btn, .save-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.save-btn {
+  background: #e50914;
+  color: white;
+  border: none;
+}
+
+.save-btn:disabled, .delete-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-confirm-btn {
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+
+.delete-confirm-btn:hover {
+  background: #dc2626;
+}
+
+.warning-text {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+.modal-body {
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 1.5rem;
+  }
+  .navbar {
+    padding: 1rem 1.5rem;
+  }
 }
 </style>

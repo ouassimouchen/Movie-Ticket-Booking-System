@@ -13,7 +13,7 @@
           <a href="#" class="active"><i class="fas fa-ticket-alt"></i> My Bookings</a>
           <a href="#"><i class="fas fa-heart"></i> Watchlist</a>
           <a href="#"><i class="fas fa-cog"></i> Settings</a>
-          <a href="#" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          <a href="#" class="logout" @click.prevent="handleLogout"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </nav>
       </aside>
 
@@ -28,13 +28,13 @@
         </header>
 
         <div class="bookings-list">
-          <div v-if="user.bookings.length === 0" class="empty-state">
+          <div v-if="bookings.length === 0" class="empty-state">
             <i class="fas fa-ticket-alt"></i>
             <p>You haven't booked any tickets yet.</p>
             <router-link to="/" class="btn-book">Book a Movie</router-link>
           </div>
 
-          <div v-else class="booking-card" v-for="booking in user.bookings" :key="booking.id">
+          <div v-else class="booking-card" v-for="booking in bookings" :key="booking.id">
             <div class="card-poster">
               <img :src="booking.movie.poster" alt="Poster">
             </div>
@@ -42,13 +42,13 @@
             <div class="card-details">
               <div class="header">
                 <h3>{{ booking.movie.title }}</h3>
-                <span class="status confirmed">Confirmed</span>
+                <span class="status" :class="booking.status.toLowerCase()">{{ booking.status }}</span>
               </div>
               
               <div class="info-grid">
                 <div class="info-item">
                   <span class="label">Date</span>
-                  <span class="value">{{ formatDate(booking.bookingDate) }}</span>
+                  <span class="value">{{ formatDate(booking.booking_date) }}</span>
                 </div>
                 <div class="info-item">
                   <span class="label">Time</span>
@@ -81,19 +81,43 @@
 </template>
 
 <script>
-import { currentUser } from '../model/mockData.js'
+import api from '../api';
 
 export default {
   name: 'UserDashboard',
   data() {
     return {
-      user: currentUser
+      user: JSON.parse(localStorage.getItem('user') || '{"name": "Guest", "email": ""}'),
+      bookings: []
+    }
+  },
+  async created() {
+    if (!localStorage.getItem('token')) {
+      this.$router.push('/login');
+      return;
+    }
+    
+    try {
+      const response = await api.get('/bookings');
+      this.bookings = response.data;
+    } catch (err) {
+      console.error('Error fetching bookings:', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        this.$router.push('/login');
+      }
     }
   },
   methods: {
     formatDate(dateStr) {
       const options = { year: 'numeric', month: 'short', day: 'numeric' };
       return new Date(dateStr).toLocaleDateString('en-US', options);
+    },
+    handleLogout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      this.$router.push('/');
     }
   }
 }
