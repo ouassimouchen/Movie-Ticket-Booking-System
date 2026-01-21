@@ -101,24 +101,18 @@
 </template>
 
 <script>
-import { currentBooking } from '../model/mockData.js'
 import api from '../api';
 
 export default {
   name: 'CheckoutView',
   data() {
     return {
-      booking: currentBooking.details || JSON.parse(localStorage.getItem('pendingBooking')),
+      booking: JSON.parse(localStorage.getItem('pendingBooking')),
       timer: 300, // 5 minutes
       processing: false
     }
   },
   async created() {
-    // If we have it in localStorage but not in mockData, sync it back
-    if (!currentBooking.details && this.booking) {
-      currentBooking.details = this.booking;
-    }
-    
     // Redirect if no booking found
     if (!this.booking) {
       this.$router.push('/');
@@ -170,7 +164,6 @@ export default {
         await api.post('/bookings', bookingData);
         
         // Clear temp booking
-        currentBooking.details = null;
         localStorage.removeItem('pendingBooking');
 
         // Navigate to Dashboard

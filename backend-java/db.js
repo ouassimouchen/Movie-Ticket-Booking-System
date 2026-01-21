@@ -15,7 +15,7 @@ db.exec(`
   )
 `);
 
-// Create bookings table
+// Create bookings table.   io
 db.exec(`
   CREATE TABLE IF NOT EXISTS bookings (
     id TEXT PRIMARY KEY,

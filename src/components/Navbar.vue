@@ -10,6 +10,7 @@
       <router-link to="/">Movies</router-link>
       <router-link to="/experiences">Experiences</router-link>
       <router-link to="/offers">Offers</router-link>
+      <router-link v-if="user.isLoggedIn" to="/my-dashboard">My Bookings</router-link>
     </div>
 
     <div class="user-actions">
@@ -53,14 +54,23 @@
 <script>
 
 import { store } from '../store';
-import { movies } from '../model/mockData';
+import api from '../api';
 
 export default {
   name: 'Navbar',
   data() {
     return {
       isScrolled: false,
+      allMovies: [],
       store
+    }
+  },
+  async created() {
+    try {
+      const response = await api.get('/movies');
+      this.allMovies = response.data;
+    } catch (err) {
+      console.error('Error fetching movies for navbar:', err);
     }
   },
   computed: {
@@ -73,7 +83,7 @@ export default {
     filteredResults() {
       if (!this.store.searchQuery || this.store.searchQuery.length < 2) return [];
       const query = this.store.searchQuery.toLowerCase();
-      return movies.filter(m => 
+      return this.allMovies.filter(m => 
         m.title.toLowerCase().includes(query) || 
         m.genre.some(g => g.toLowerCase().includes(query))
       ).slice(0, 5); // Limit to 5 results

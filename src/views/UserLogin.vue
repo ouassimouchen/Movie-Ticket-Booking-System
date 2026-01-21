@@ -24,7 +24,7 @@
         </div>
         <div class="input-group">
           <label>Password</label>
-          <input type="password" v-model="password" placeholder="Any password works" required />
+          <input type="password" v-model="password" placeholder="••••••••" required />
         </div>
         <div class="options">
           <label class="remember">

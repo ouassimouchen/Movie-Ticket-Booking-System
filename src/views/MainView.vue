@@ -12,53 +12,148 @@
 
     <main class="content">
       <header class="page-header">
-        <h1>Dashboard - User Management</h1>
+        <h1>Dashboard - Administration</h1>
         <p>Monitor and manage movie ticket bookings and user data</p>
       </header>
 
+      <div class="dashboard-tabs">
+        <button :class="{ active: currentTab === 'users' }" @click="currentTab = 'users'">
+          <i class="fas fa-users"></i> Users
+        </button>
+        <button :class="{ active: currentTab === 'movies' }" @click="currentTab = 'movies'">
+          <i class="fas fa-film"></i> Movies
+        </button>
+        <button :class="{ active: currentTab === 'bookings' }" @click="currentTab = 'bookings'">
+          <i class="fas fa-ticket-alt"></i> Bookings
+        </button>
+      </div>
+
       <div v-if="loading" class="loading-state">
         <i class="fas fa-spinner fa-spin"></i>
-        <span>Fetching users from database...</span>
+        <span>Fetching data from database...</span>
       </div>
 
       <div v-else class="data-card">
-        <div class="card-header">
-          <h3>User List</h3>
-          <span class="badge">{{ users.length }} Total</span>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Created At</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td>{{ user.id }}</td>
-                <td class="user-name">{{ user.name }}</td>
-                <td class="user-email">{{ user.email }}</td>
-                <td>
-                  <span :class="['role-pill', user.role]">{{ user.role }}</span>
-                </td>
-                <td class="date">{{ formatDate(user.created_at) }}</td>
-                <td class="actions">
-                  <button class="edit-btn" @click="openEditModal(user)" title="Edit User">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="delete-btn" @click="confirmDelete(user)" title="Delete User">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- Movies View -->
+        <template v-if="currentTab === 'movies'">
+          <div class="card-header">
+            <h3>Movies</h3>
+            <button class="add-btn" @click="openAddMovie">
+               <i class="fas fa-plus"></i> Add Movie
+            </button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Poster</th>
+                  <th>Title</th>
+                  <th>Rating</th>
+                  <th>Duration</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="movie in allMovies" :key="movie.id">
+                  <td><img :src="movie.poster" class="table-poster" /></td>
+                  <td><strong>{{ movie.title }}</strong></td>
+                  <td>{{ movie.rating }}</td>
+                  <td>{{ movie.duration }}</td>
+                  <td class="actions">
+                    <button class="edit-btn" @click="openEditMovie(movie)" title="Edit Movie">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" @click="confirmDeleteMovie(movie)" title="Delete Movie">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+        <!-- Users View -->
+        <template v-else-if="currentTab === 'users'">
+          <div class="card-header">
+            <h3>User List</h3>
+            <span class="badge">{{ users.length }} Total</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in users" :key="user.id">
+                  <td>{{ user.id }}</td>
+                  <td class="user-name">{{ user.name }}</td>
+                  <td class="user-email">{{ user.email }}</td>
+                  <td>
+                    <span :class="['role-pill', user.role]">{{ user.role }}</span>
+                  </td>
+                  <td class="date">{{ formatDate(user.created_at) }}</td>
+                  <td class="actions">
+                    <button class="edit-btn" @click="openEditModal(user)" title="Edit User">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" @click="confirmDelete(user)" title="Delete User">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
+
+        <!-- Bookings View -->
+        <template v-else-if="currentTab === 'bookings'">
+          <div class="card-header">
+            <h3>All Bookings</h3>
+            <span class="badge">{{ bookings.length }} Total</span>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Movie</th>
+                  <th>User ID</th>
+                  <th>Hall/Time</th>
+                  <th>Total</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="booking in bookings" :key="booking.id">
+                  <td>{{ booking.id }}</td>
+                  <td>
+                    <div class="movie-cell">
+                      <strong>{{ booking.movieTitle }}</strong>
+                    </div>
+                  </td>
+                  <td>{{ booking.userId }}</td>
+                  <td>{{ booking.sessionHall }} - {{ booking.sessionTime }}</td>
+                  <td class="price">${{ booking.total.toFixed(2) }}</td>
+                  <td class="date">{{ formatDate(booking.bookingDate) }}</td>
+                  <td class="actions">
+                    <button class="delete-btn" @click="confirmDeleteBooking(booking)" title="Delete Booking">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </template>
       </div>
     </main>
 
@@ -116,6 +211,113 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Booking Modal -->
+    <div v-if="showDeleteBookingModal" class="modal-overlay" @click.self="showDeleteBookingModal = false">
+      <div class="modal delete-modal">
+        <div class="modal-header">
+          <h3>Delete Booking</h3>
+          <button class="close-btn" @click="showDeleteBookingModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete this booking for <strong>{{ bookingToDelete?.movieTitle }}</strong>?</p>
+          <p>Customer ID: {{ bookingToDelete?.userId }}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="cancel-btn" @click="showDeleteBookingModal = false">Cancel</button>
+          <button type="button" class="delete-confirm-btn" @click="executeDeleteBooking" :disabled="deleting">
+            <span v-if="deleting">Deleting...</span>
+            <span v-else>Confirm Deletion</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Movie Modal -->
+    <div v-if="showMovieModal" class="modal-overlay" @click.self="showMovieModal = false">
+      <div class="modal movie-modal">
+        <div class="modal-header">
+          <h3>{{ movieForm.id ? 'Edit Movie' : 'Add New Movie' }}</h3>
+          <button class="close-btn" @click="showMovieModal = false">&times;</button>
+        </div>
+        <form @submit.prevent="saveMovie">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" v-model="movieForm.title" required />
+            </div>
+            <div class="form-group">
+              <label>Rating</label>
+              <select v-model="movieForm.rating">
+                <option>G</option>
+                <option>PG</option>
+                <option>PG-13</option>
+                <option>R</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+             <div class="form-group">
+              <label>Duration</label>
+              <input type="text" v-model="movieForm.duration" placeholder="e.g., 2h 30m" required />
+            </div>
+            <div class="form-group">
+              <label>IMDB Rating</label>
+              <input type="number" step="0.1" v-model="movieForm.imdbRating" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Poster URL</label>
+            <input type="text" v-model="movieForm.poster" required />
+          </div>
+          <div class="form-group">
+            <label>Backdrop URL</label>
+            <input type="text" v-model="movieForm.backdrop" required />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea v-model="movieForm.description" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+             <div class="form-group">
+               <label>Genres (JSON array)</label>
+               <input type="text" v-model="movieForm.genre" />
+             </div>
+             <div class="form-group">
+               <label>Cast (JSON array)</label>
+               <input type="text" v-model="movieForm.cast" />
+             </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="cancel-btn" @click="showMovieModal = false">Cancel</button>
+            <button type="submit" class="save-btn" :disabled="saving">
+              <span v-if="saving">Saving...</span>
+              <span v-else>Save Movie</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Movie Modal -->
+    <div v-if="showDeleteMovieModal" class="modal-overlay" @click.self="showDeleteMovieModal = false">
+      <div class="modal delete-modal">
+        <div class="modal-header">
+          <h3>Delete Movie</h3>
+          <button class="close-btn" @click="showDeleteMovieModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete <strong>{{ movieToDelete?.title }}</strong>?</p>
+          <p class="warning-text">This will delete all showtimes associated with this movie.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="cancel-btn" @click="showDeleteMovieModal = false">Cancel</button>
+          <button type="button" class="delete-confirm-btn" @click="executeDeleteMovie" :disabled="deleting">
+            <span v-if="deleting">Deleting...</span>
+            <span v-else>Confirm Deletion</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -127,10 +329,18 @@ export default {
   data() {
     return {
       users: [],
+      bookings: [],
+      allMovies: [],
+      currentTab: 'users',
       loading: true,
       showModal: false,
       showDeleteModal: false,
+      showDeleteBookingModal: false,
+      showMovieModal: false,
+      showDeleteMovieModal: false,
       userToDelete: null,
+      bookingToDelete: null,
+      movieToDelete: null,
       saving: false,
       deleting: false,
       editForm: {
@@ -138,6 +348,18 @@ export default {
         name: '',
         email: '',
         role: ''
+      },
+      movieForm: {
+        id: null,
+        title: '',
+        poster: '',
+        backdrop: '',
+        rating: 'PG-13',
+        duration: '',
+        description: '',
+        genre: '[]',
+        cast: '[]',
+        trailer: ''
       }
     }
   },
@@ -149,18 +371,34 @@ export default {
       this.$router.push('/');
       return;
     }
-    await this.fetchUsers();
+    await Promise.all([this.fetchUsers(), this.fetchBookings(), this.fetchMovies()]);
   },
   methods: {
+    async fetchMovies() {
+       try {
+         const response = await api.get('/movies');
+         this.allMovies = response.data;
+       } catch (err) {
+         console.error('Error fetching movies:', err);
+       }
+    },
     async fetchUsers() {
-      this.loading = true;
       try {
         const response = await api.get('/admin/users');
         this.users = response.data;
-        console.log('Fetched users:', this.users);
       } catch (err) {
         console.error('Error fetching users:', err);
-        alert('Failed to fetch users: ' + (err.response?.data?.message || err.message));
+      }
+    },
+    async fetchBookings() {
+      this.loading = true;
+      try {
+        const response = await api.get('/admin/bookings');
+        this.bookings = response.data;
+        console.log('Fetched bookings:', this.bookings);
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+        alert('Failed to fetch bookings: ' + (err.response?.data?.message || err.message));
       } finally {
         this.loading = false;
       }
@@ -204,13 +442,99 @@ export default {
         alert('User deleted successfully');
         this.showDeleteModal = false;
         this.userToDelete = null;
-        await this.fetchUsers();
+        await Promise.all([this.fetchUsers(), this.fetchBookings()]);
       } catch (err) {
         console.error('Error deleting user:', err);
         alert('Failed to delete user: ' + (err.response?.data?.message || err.message));
       } finally {
         this.deleting = false;
       }
+    },
+    confirmDeleteBooking(booking) {
+      this.bookingToDelete = booking;
+      this.showDeleteBookingModal = true;
+    },
+    async executeDeleteBooking() {
+      if (!this.bookingToDelete) return;
+      this.deleting = true;
+      try {
+        await api.delete(`/admin/bookings/${this.bookingToDelete.id}`);
+        alert('Booking deleted successfully');
+        this.showDeleteBookingModal = false;
+        this.bookingToDelete = null;
+        await this.fetchBookings();
+      } catch (err) {
+        console.error('Error deleting booking:', err);
+        alert('Failed to delete booking: ' + (err.response?.data?.message || err.message));
+      } finally {
+        this.deleting = false;
+      }
+    },
+    openAddMovie() {
+      this.movieForm = {
+        id: null,
+        title: '',
+        poster: '',
+        backdrop: '',
+        rating: 'PG-13',
+        duration: '',
+        description: '',
+        genre: '["Action"]',
+        cast: '[]',
+        trailer: ''
+      };
+      this.showMovieModal = true;
+    },
+    openEditMovie(movie) {
+      this.movieForm = { 
+        ...movie,
+        genre: JSON.stringify(movie.genre),
+        cast: JSON.stringify(movie.cast)
+      };
+      this.showMovieModal = true;
+    },
+    async saveMovie() {
+      this.saving = true;
+      try {
+        const payload = {
+            ...this.movieForm,
+            // Genre and Cast should be strings in DB if we are using AdminMovieController directly
+            // But if we want it to be clean, the AdminMovieController expects the Entity.
+            // Movie Entity has genre and cast as Strings.
+        };
+
+        if (this.movieForm.id) {
+          await api.put(`/admin/movies/${this.movieForm.id}`, payload);
+        } else {
+          await api.post('/admin/movies', payload);
+        }
+        alert('Movie saved successfully');
+        this.showMovieModal = false;
+        await this.fetchMovies();
+      } catch (err) {
+        console.error('Error saving movie:', err);
+        alert('Failed to save movie: ' + (err.response?.data?.message || err.message));
+      } finally {
+        this.saving = false;
+      }
+    },
+    confirmDeleteMovie(movie) {
+        this.movieToDelete = movie;
+        this.showDeleteMovieModal = true;
+    },
+    async executeDeleteMovie() {
+        if (!this.movieToDelete) return;
+        this.deleting = true;
+        try {
+            await api.delete(`/admin/movies/${this.movieToDelete.id}`);
+            alert('Movie deleted successfully');
+            this.showDeleteMovieModal = false;
+            await this.fetchMovies();
+        } catch (err) {
+            alert('Failed to delete movie');
+        } finally {
+            this.deleting = false;
+        }
     },
     logout() {
       localStorage.removeItem('token');
@@ -271,23 +595,82 @@ export default {
   color: white;
 }
 
-.content {
-  padding: 3rem 4rem;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.page-header {
-  margin-bottom: 3rem;
-}
-
-.page-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
 .page-header p {
   color: rgba(255, 255, 255, 0.6);
+}
+
+.dashboard-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-tabs button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0.8rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.dashboard-tabs button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.dashboard-tabs button.active {
+  background: #e50914;
+  color: white;
+  border-color: #e50914;
+}
+
+.price {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.movie-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-poster {
+  width: 40px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.add-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.movie-modal {
+    max-width: 600px !important;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: none;
 }
 
 .loading-state {

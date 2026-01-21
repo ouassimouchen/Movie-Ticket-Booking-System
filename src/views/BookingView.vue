@@ -124,7 +124,7 @@
 </template>
 
 <script>
-import { movies, showtimes, currentBooking } from '../model/mockData.js'
+import api from '../api';
 
 export default {
   name: 'BookingView',
@@ -138,12 +138,22 @@ export default {
       bookingFee: 1.50
     }
   },
-  created() {
-    const sessionId = parseInt(this.$route.params.sessionId);
-    this.session = showtimes.find(s => s.id === sessionId);
-    if (this.session) {
-      this.movie = movies.find(m => m.id === this.session.movieId);
-      this.generateSeats();
+  async created() {
+    const sessionId = this.$route.params.sessionId;
+    try {
+      const sessionRes = await api.get(`/movies/showtimes/${sessionId}`);
+      this.session = sessionRes.data;
+      if (this.session && this.session.movie) {
+        // The Showtime entity in Java has the Movie object
+        this.movie = this.session.movie;
+        // The Movie object from Hibernate might have genre/cast as strings
+        // But our MovieController converts them. 
+        // Wait, if I get it from MovieController.getShowtimeById, the 'movie' field is the Entity.
+        // Let's ensure consistency. 
+        this.generateSeats();
+      }
+    } catch (err) {
+      console.error('Error fetching booking session:', err);
     }
   },
   computed: {
@@ -221,7 +231,6 @@ export default {
       };
       
       localStorage.setItem('pendingBooking', JSON.stringify(bookingDetails));
-      currentBooking.details = bookingDetails;
       this.$router.push('/checkout');
     }
   }

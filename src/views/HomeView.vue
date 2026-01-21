@@ -1,14 +1,14 @@
 <template>
   <div class="home-view">
     <!-- Hero Section -->
-    <section class="hero" v-if="featuredMovie" :style="{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), #0f0f0f), url(${featuredMovie.backdrop})` }">
+    <section class="hero" v-if="featuredMovie" :style="{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.3), #0f0f0f), url(${featuredMovie.backdrop || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070'})` }">
       <div class="hero-content">
         <span class="tag">Now Trending</span>
         <h1>{{ featuredMovie.title }}</h1>
         <div class="meta">
           <span class="rating">{{ featuredMovie.rating }}</span>
           <span>{{ featuredMovie.duration }}</span>
-          <span>{{ featuredMovie.genre.join(', ') }}</span>
+          <span>{{ (featuredMovie.genre || []).join(', ') }}</span>
         </div>
         <p class="description">{{ featuredMovie.description }}</p>
         <div class="actions">
@@ -38,7 +38,7 @@
         <div v-for="movie in movies" :key="movie.id" class="movie-card">
           <router-link :to="'/movie/' + movie.id" class="card-link">
             <div class="poster-wrapper">
-              <img :src="movie.poster" :alt="movie.title" loading="lazy" />
+              <img :src="movie.poster" :alt="movie.title" loading="lazy" @error="handleImageError" />
               <div class="overlay">
                 <button class="book-btn">Book Now</button>
               </div>
@@ -46,7 +46,7 @@
             <div class="card-info">
               <h3>{{ movie.title }}</h3>
               <div class="card-meta">
-                <span>{{ movie.genre[0] }}</span>
+                <span>{{ (movie.genre || ['Movie'])[0] }}</span>
                 <span class="star"><i class="fas fa-star"></i> {{ movie.imdbRating }}</span>
               </div>
             </div>
@@ -58,15 +58,28 @@
 </template>
 
 <script>
-import { movies } from '../model/mockData.js'
+import api from '../api';
 import { store } from '../store'
 
 export default {
   name: 'HomeView',
   data() {
     return {
-      allMovies: movies,
+      allMovies: [],
       store
+    }
+  },
+  async created() {
+    try {
+      const response = await api.get('/movies');
+      this.allMovies = response.data;
+    } catch (err) {
+      console.error('Error fetching movies:', err);
+    }
+  },
+  methods: {
+    handleImageError(e) {
+      e.target.src = 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=2070';
     }
   },
   computed: {
@@ -74,8 +87,8 @@ export default {
       if (!this.store.searchQuery) return this.allMovies;
       const query = this.store.searchQuery.toLowerCase();
       return this.allMovies.filter(m => 
-        m.title.toLowerCase().includes(query) || 
-        m.genre.some(g => g.toLowerCase().includes(query))
+        (m.title || '').toLowerCase().includes(query) || 
+        (m.genre || []).some(g => g.toLowerCase().includes(query))
       );
     },
     featuredMovie() {

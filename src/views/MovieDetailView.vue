@@ -1,12 +1,12 @@
 <template>
   <div class="movie-detail-view" v-if="movie">
     <!-- Backdrop & Header -->
-    <div class="backdrop" :style="{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), #0f0f0f), url(${movie.backdrop})` }"></div>
+    <div class="backdrop" :style="{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.2), #0f0f0f), url(${movie.backdrop || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070'})` }"></div>
 
     <div class="content">
       <div class="movie-header">
         <div class="poster-container">
-          <img :src="movie.poster" :alt="movie.title" class="poster" />
+          <img :src="movie.poster" :alt="movie.title" class="poster" @error="handleImageError" />
         </div>
         <div class="info">
           <h1>{{ movie.title }}</h1>
@@ -15,7 +15,7 @@
             <span class="tag">{{ movie.duration }}</span>
             <span class="tag">{{ movie.imdbRating }} IMDB</span>
           </div>
-          <p class="genres">{{ movie.genre.join(' • ') }}</p>
+          <p class="genres">{{ (movie.genre || []).join(' • ') }}</p>
           <p class="release-date">Released: {{ formatDate(movie.releaseDate) }}</p>
           
           <div class="plot">
@@ -79,7 +79,7 @@
 </template>
 
 <script>
-import { movies, showtimes } from '../model/mockData.js'
+import api from '../api';
 
 export default {
   name: 'MovieDetailView',
@@ -89,12 +89,23 @@ export default {
       movieShowtimes: []
     }
   },
-  created() {
-    const movieId = parseInt(this.$route.params.id);
-    this.movie = movies.find(m => m.id === movieId);
-    this.movieShowtimes = showtimes.filter(s => s.movieId === movieId);
+  async created() {
+    const movieId = this.$route.params.id;
+    try {
+      const [movieRes, showtimesRes] = await Promise.all([
+        api.get(`/movies/${movieId}`),
+        api.get(`/movies/${movieId}/showtimes`)
+      ]);
+      this.movie = movieRes.data;
+      this.movieShowtimes = showtimesRes.data;
+    } catch (err) {
+      console.error('Error fetching movie details:', err);
+    }
   },
   methods: {
+    handleImageError(e) {
+      e.target.src = 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=2070';
+    },
     formatDate(dateStr) {
       const options = { year: 'numeric', month: 'long', day: 'numeric' };
       return new Date(dateStr).toLocaleDateString('en-US', options);
